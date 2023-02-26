@@ -93,10 +93,16 @@ function makeShouldSkip () {
   }
 }
 
+function alwaysFalse() {
+  return false
+}
+
 export default declare(api => {
   api.assertVersion(7)
 
   const shouldSkip = makeShouldSkip()
+  const customShouldSkip = this.opts.customShouldSkip || alwaysFalse
+  const visitor = this.opts.customProgramVisitor || programVisitor
 
   const t = api.types
   return {
@@ -106,7 +112,7 @@ export default declare(api => {
           this.__dv__ = null
           this.nycConfig = findConfig(this.opts)
           const realPath = getRealpath(this.file.opts.filename)
-          if (shouldSkip(realPath, this.nycConfig)) {
+          if (shouldSkip(realPath, this.nycConfig) || customShouldSkip(realPath)) {
             return
           }
           let { inputSourceMap } = this.opts
@@ -123,7 +129,7 @@ export default declare(api => {
               visitorOptions[name] = schema.defaults.instrumentVisitor[name]
             }
           })
-          this.__dv__ = programVisitor(t, realPath, {
+          this.__dv__ = visitor(t, realPath, {
             ...visitorOptions,
             inputSourceMap
           })
